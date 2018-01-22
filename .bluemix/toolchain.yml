@@ -9,49 +9,57 @@ template:
   header: '![](toolchain.svg?localize)'
   icon: icon.svg
   required:
-    - sample-build
-    - sample-repo
+    - build
+    - app-repo
+    - testscript-repo
   info:
     git url: >-
-      [https://github.com/open-toolchain/simple-toolchain](https://github.com/open-toolchain/simple-toolchain)
+      [https://github.com/vinapp/simple-toolchain](https://github.com/vinapp/simple-toolchain)
     git branch: >-
-      [master](https://github.com/open-toolchain/simple-toolchain/tree/master)
+      [master](https://github.com/vinapp/simple-toolchain/tree/master)
 toolchain:
   name: 'simple-toolchain-{{timestamp}}'
   template:
     getting_started:
       $ref: "#/messages/template.gettingStarted"
 services:
-  sample-repo:
+  app-repo:
     service_id: githubpublic
     parameters:
-      repo_name: '{{toolchain.name}}'
-      repo_url: 'https://github.com/open-toolchain/node-hello-world'
+      repo_name: 'app-repo-{{timestamp}}'
+      repo_url: 'https://github.com/vinapp/sample-android-app'
       type: clone
       has_issues: true
       enable_traceability: true
-  sample-build:
+  testscript-repo:
+    service_id: githubpublic
+    parameters:
+      repo_name: 'testscript-repo-{{timestamp}}'
+      repo_url: 'https://github.com/vinapp/testdroid-samples'
+      type: clone
+      has_issues: true
+      enable_traceability: true
+  build:
     service_id: pipeline
     parameters:
       services:
-        - sample-repo
-      name: '{{services.sample-repo.parameters.repo_name}}'
+        - app-repo
+        - testscript-repo
+      name: '{{services.app-repo.parameters.repo_name}}'
       ui-pipeline: true
       configuration:
         content:
           $text: pipeline.yml
         env:
-          SAMPLE_REPO: sample-repo
-          CF_APP_NAME: '{{form.pipeline.parameters.prod-app-name}}'
+          APP_REPO: app-repo
+          SCRIPT_REPO: testscript-repo
           PROD_SPACE_NAME: '{{form.pipeline.parameters.prod-space}}'
           PROD_ORG_NAME: '{{form.pipeline.parameters.prod-organization}}'
           PROD_REGION_ID: '{{form.pipeline.parameters.prod-region}}'
-        execute: true
-  webide:
-    service_id: orion
+        execute: false
 form:
   pipeline:
     parameters:
-      prod-app-name: '{{services.sample-repo.parameters.repo_name}}'
+      prod-app-name: '{{services.app-repo.parameters.repo_name}}'
     schema:
       $ref: deploy.json

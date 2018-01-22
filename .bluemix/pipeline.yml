@@ -1,62 +1,152 @@
 ---
 stages:
-- name: BUILD
+- name: BUILD - Fastlane (APK)
   inputs:
   - type: git
     branch: master
-    service: ${SAMPLE_REPO}
+    service: ${APP_REPO}
   triggers:
   - type: commit
+  properties:
+  - name: gitUser
+    value: vinapp
+    type: text
+  - name: gitPass
+    value: <<pass>>
+    type: text
   jobs:
-  - name: Build
+  - name: Install Android SDK, Fastlane and build apk
     type: builder
-- name: DEPLOY
+    build_type: shell
+    script: |-
+      #!/bin/bash
+      export JAVA_HOME=/opt/IBM/java8
+      cd /home/pipeline
+
+      # Android sdk
+      wget https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
+      sudo apt-get install unzip
+      unzip /home/pipeline/sdk-tools-linux-3859397.zip
+      echo 'y' | /home/pipeline/tools/bin/sdkmanager --licenses
+      echo 'y' | /home/pipeline/tools/bin/sdkmanager "platform-tools" "platforms;android-26"
+
+      # Prereq for installing Fastlane: Install RVM
+      gpg --keyserver hkp://keys.gnupg.net --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+      \curl -L https://get.rvm.io | bash -s stable --ruby
+      source /home/pipeline/.rvm/scripts/rvm get stable --autolibs=enable
+      gem -v
+
+      # Install Fastlane
+      gem install fastlane -NV
+
+      # Build the apk file
+      cd /home/pipeline/$BUILD_ID
+      fastlane beta
+
+      cp ./app/build/outputs/apk/app-release-unsigned.apk .
+
+      # Push the generated apk for git hub for testing
+      git config --global user.name $gitUser
+      git config --global user.email $gitPass
+      git add app-release-unsigned.apk
+      git commit -m "released a new version of apk - build : ($BUILD_ID)"
+      usernamepass=$gitUser:$gitPass
+      git push https://$usernamepass@github.com/vinapp/sample-android-app master
+- name: TEST - AppiumTestDroid
   inputs:
-  - type: job
-    stage: BUILD
-    job: Build
+  - type: git
+    branch: master
+    service: ${SCRIPT_REPO}
+    dir_name: null
   triggers:
   - type: stage
   properties:
-  - name: CF_APP_NAME
-    value: undefined
+  - name: skipDatafile
+    value: 'true'
     type: text
-  - name: APP_URL
-    value: undefined
+  - name: absoluteurl
+    value: http://gsander.de:8080/appcenterconsole80/console.html
+    type: text
+  - name: username
+    value: demo
+    type: text
+  - name: password
+    value: demo4711
+    type: text
+  - name: uploadfile
+    value: /Users/vinod/AppCenterAppiumAutomation/AppCenterUIAutomation/src/main/resources/Hello.ipa
+    type: text
+  - name: context
+    value: appcenterconsole80
+    type: text
+  - name: mobcontext
+    value: applicationcenter80
+    type: text
+  - name: port
+    value: '8080'
+    type: text
+  - name: portocol
+    value: http
+    type: text
+  - name: hostname
+    value: gsander.de
+    type: text
+  - name: appcenterclientapppath
+    value: /home/pipeline/$BUILD_ID/target/classes/IBMAppCenterClient.apk
+    type: text
+  - name: screenshot_dir
+    value: /home/pipeline/home/pipeline/$BUILD_ID/target
+    type: text
+  - name: applicationPath
+    value: /home/pipeline/$BUILD_ID/target/classes/IBMAppCenterClient.apk
+    type: text
+  - name: executionType
+    value: client
+    type: text
+  - name: apiKey
+    value: <<apiKey>>
+    type: text
+  - name: test
+    value: AndroidAppiumExampleTest
     type: text
   jobs:
-  - name: Blue-Green Deploy
-    type: deployer
-    target:
-      region_id: ${PROD_REGION_ID}
-      organization: ${PROD_ORG_NAME}
-      space: ${PROD_SPACE_NAME}
-      application: ${CF_APP_NAME}
-    script: |
+  - name: Test the app using Appium scripts on Bitbar
+    type: builder
+    fail_stage: false
+    artifact_dir: target
+    build_type: maven
+    script: |-
       #!/bin/bash
-      # Push app
-      if ! cf app $CF_APP; then  
-        cf push $CF_APP
-      else
-        OLD_CF_APP=${CF_APP}-OLD-$(date +"%s")
-        rollback() {
-          set +e  
-          if cf app $OLD_CF_APP; then
-            cf logs $CF_APP --recent
-            cf delete $CF_APP -f
-            cf rename $OLD_CF_APP $CF_APP
-          fi
-          exit 1
-        }
-        set -e
-        trap rollback ERR
-        cf rename $CF_APP $OLD_CF_APP
-        cf push $CF_APP
-        cf delete $OLD_CF_APP -f
-      fi
-      # Export app name and URL for use in later Pipeline jobs
-      export CF_APP_NAME="$CF_APP"
-      export APP_URL=http://$(cf app $CF_APP_NAME | grep -e urls: -e routes: | awk '{print $2}')
-      # View logs
-      #cf logs "${CF_APP}" --recent
-      
+      mvn clean install
+- name: UPLOAD - Logs
+  triggers:
+  - type: stage
+  properties:
+  - name: gitUser
+    value: vinapp
+    type: text
+  - name: gitPass
+    value: <<pass>>
+    type: text
+  - name: appiumClientSideProject
+    value: https://cloud.testdroid.com/api/me/projects/137948056/runs
+    type: text
+  - name: apiKey
+    value: <<apiKey>>
+    type: text
+  - name: issueGitRepo
+    value: https://api.github.com/repos/vinapp/testdroid-samples/issues
+    type: text
+  - name: testReportLocation
+    value: https://cloud.testdroid.com/#service/testrun/137948056/
+    type: text
+  jobs:
+  - name: LogsUpload
+    type: builder
+    artifact_dir: ''
+    build_type: shell
+    script: |-
+      testID=$(curl -H "Accept: application/json" -u $apiKey -X GET $appiumClientSideProject | awk -F'[:]' '{print $3}' | awk -F'[,]' '{print $1}')
+      title="Test Results for build "$testID
+      body="Check the detail reports here : "$testReportLocation$testID
+      curl --user "$gitUser:$gitPass" --include --request POST --data "{\"title\": \"$title\", \"body\": \"$body\"}" $issueGitRepo
