@@ -7,6 +7,7 @@ stages:
     service: ${APP_REPO}
   triggers:
   - type: commit
+  - enabled: false
   properties:
   - name: gitPushUser
     value: vinapp
