@@ -18,8 +18,7 @@ stages:
     value: vin.app@gmail.com
     type: text
   - name: apkGitPushUrl
-    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/sample-android-app
-      master
+    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/sample-android-app master
     type: text
   jobs:
   - name: Install Android SDK, Fastlane and build apk
