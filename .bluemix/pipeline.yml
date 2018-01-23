@@ -8,11 +8,18 @@ stages:
   triggers:
   - type: commit
   properties:
-  - name: gitUser
+  - name: gitPushUser
     value: vinapp
     type: text
-  - name: gitPass
-    value: <<pass>>
+  - name: gitPushToken
+    value: 6aba5bac3e0e7fecc9cb6ca4ff623325191117c6
+    type: text
+  - name: gitPushEmail
+    value: vin.app@gmail.com
+    type: text
+  - name: apkGitPushUrl
+    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/sample-android-app
+      master
     type: text
   jobs:
   - name: Install Android SDK, Fastlane and build apk
@@ -46,12 +53,12 @@ stages:
       cp ./app/build/outputs/apk/app-release-unsigned.apk .
 
       # Push the generated apk for git hub for testing
-      git config --global user.name $gitUser
-      git config --global user.email $gitPass
+      git config --global user.name $gitPushUser
+      git config --global user.email $gitPushEmail
       git add app-release-unsigned.apk
       git commit -m "released a new version of apk - build : ($BUILD_ID)"
-      usernamepass=$gitUser:$gitPass
-      git push https://$usernamepass@github.com/vinapp/sample-android-app master
+      echo $apkGitPushUrl
+      git push $apkGitPushUrl
 - name: TEST - AppiumTestDroid
   inputs:
   - type: git
@@ -61,7 +68,7 @@ stages:
   triggers:
   - type: stage
   properties:
-  - name: skipDatafile
+    - name: skipDatafile
     value: 'true'
     type: text
   - name: absoluteurl
@@ -98,16 +105,16 @@ stages:
     value: /home/pipeline/home/pipeline/$BUILD_ID/target
     type: text
   - name: applicationPath
-    value: /home/pipeline/$BUILD_ID/target/classes/IBMAppCenterClient.apk
+    value: /home/pipeline/$BUILD_ID/appium/sample-scripts/java/src/test/resources/IBMAppCenterClient.apk
     type: text
   - name: executionType
-    value: client
-    type: text
-  - name: apiKey
-    value: <<apiKey>>
+    value: clientside
     type: text
   - name: test
     value: AndroidAppiumExampleTest
+    type: text
+  - name: bitbarApiKey
+    value: 3IMUlaWW1BW2uzESHldjo5cEU4swMqf7
     type: text
   jobs:
   - name: Test the app using Appium scripts on Bitbar
@@ -117,7 +124,8 @@ stages:
     build_type: maven
     script: |-
       #!/bin/bash
-      mvn clean install
+      cd /home/pipeline/$BUILD_ID/appium/sample-scripts/java
+      mvn clean install -X -Dtest=$test -DexecutionType=$executionType -DapiKey=$bitbarApiKey -DapplicationPath=$applicationPath
 - name: UPLOAD - Logs
   triggers:
   - type: stage
@@ -125,14 +133,14 @@ stages:
   - name: gitUser
     value: vinapp
     type: text
-  - name: gitPass
-    value: <<pass>>
+  - name: gitToken
+    value: 6aba5bac3e0e7fecc9cb6ca4ff623325191117c6
     type: text
   - name: appiumClientSideProject
     value: https://cloud.testdroid.com/api/me/projects/137948056/runs
     type: text
-  - name: apiKey
-    value: <<apiKey>>
+  - name: bitbarApiKey
+    value: '3IMUlaWW1BW2uzESHldjo5cEU4swMqf7:'
     type: text
   - name: issueGitRepo
     value: https://api.github.com/repos/vinapp/testdroid-samples/issues
@@ -146,7 +154,7 @@ stages:
     artifact_dir: ''
     build_type: shell
     script: |-
-      testID=$(curl -H "Accept: application/json" -u $apiKey -X GET $appiumClientSideProject | awk -F'[:]' '{print $3}' | awk -F'[,]' '{print $1}')
+      testID=$(curl -H "Accept: application/json" -u $bitbarApiKey -X GET $appiumClientSideProject | awk -F'[:]' '{print $3}' | awk -F'[,]' '{print $1}')
       title="Test Results for build "$testID
       body="Check the detail reports here : "$testReportLocation$testID
-      curl --user "$gitUser:$gitPass" --include --request POST --data "{\"title\": \"$title\", \"body\": \"$body\"}" $issueGitRepo
+      curl -H "Content-Type: application/json" -H "Authorization: Bearer $gitToken" --include --request POST --data "{\"title\": \"$title\", \"body\": \"$body\"}" $issueGitRepo
