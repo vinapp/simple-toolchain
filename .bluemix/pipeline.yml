@@ -67,7 +67,7 @@ stages:
   triggers:
   - type: stage
   properties:
-    - name: skipDatafile
+  - name: skipDatafile
     value: 'true'
     type: text
   - name: absoluteurl
