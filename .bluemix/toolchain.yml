@@ -29,6 +29,8 @@ services:
       repo_name: 'app-repo-{{timestamp}}'
       repo_url: 'https://github.com/vinapp/sample-android-app'
       type: clone
+      has_issues: false
+      enable_traceability: true
   testscript-repo:
     service_id: githubpublic
     parameters:
