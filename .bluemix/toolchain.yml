@@ -35,7 +35,6 @@ services:
     service_id: githubpublic
     parameters:
       repo_name: 'testscript-repo-{{timestamp}}'
-      repo_url: 'https://github.com/vinapp/testdroid-samples'
       type: clone
       has_issues: true
       enable_traceability: true
