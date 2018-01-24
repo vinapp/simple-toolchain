@@ -119,7 +119,6 @@ stages:
   - name: Test the app using Appium scripts on Bitbar
     type: builder
     fail_stage: false
-    artifact_dir: target
     build_type: maven
     script: |-
       #!/bin/bash
