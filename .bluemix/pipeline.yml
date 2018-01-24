@@ -134,17 +134,17 @@ stages:
   - name: gitToken
     value: 6aba5bac3e0e7fecc9cb6ca4ff623325191117c6
     type: text
-  - name: appiumClientSideProject
-    value: https://cloud.testdroid.com/api/me/projects/137948056/runs
-    type: text
   - name: bitbarApiKey
     value: '3IMUlaWW1BW2uzESHldjo5cEU4swMqf7:'
     type: text
+  - name: bitbarAppiumClientSideProject
+    value: https://cloud.testdroid.com/api/me/projects/137948056/runs
+    type: text
+  - name: bitbarTestReportLocation
+    value: https://cloud.testdroid.com/#service/testrun/137948056/
+    type: text
   - name: issueGitRepo
     value: https://api.github.com/repos/vinapp/testdroid-samples/issues
-    type: text
-  - name: testReportLocation
-    value: https://cloud.testdroid.com/#service/testrun/137948056/
     type: text
   jobs:
   - name: LogsUpload
@@ -152,7 +152,7 @@ stages:
     artifact_dir: ''
     build_type: shell
     script: |-
-      testID=$(curl -H "Accept: application/json" -u $bitbarApiKey -X GET $appiumClientSideProject | awk -F'[:]' '{print $3}' | awk -F'[,]' '{print $1}')
+      testID=$(curl -H "Accept: application/json" -u $bitbarApiKey -X GET $bitbarAppiumClientSideProject | awk -F'[:]' '{print $3}' | awk -F'[,]' '{print $1}')
       title="Test Results for build "$testID
-      body="Check the detail reports here : "$testReportLocation$testID
+      body="Check the detail reports here : "$bitbarTestReportLocation$testID
       curl -H "Content-Type: application/json" -H "Authorization: Bearer $gitToken" --include --request POST --data "{\"title\": \"$title\", \"body\": \"$body\"}" $issueGitRepo
