@@ -18,8 +18,11 @@ stages:
     value: vin.app@gmail.com
     type: text
   - name: apkGitPushUrl
-    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/sample-android-app master
+    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/$appRepo master
     type: text
+  - name: appRepo
+    value: appRepo Name
+    type: text  
   - name: push
     value: true
     type: text
@@ -34,6 +37,18 @@ stages:
       #!/bin/bash
       export JAVA_HOME=/opt/IBM/java8
       cd /home/pipeline
+
+      if [ "$push" = "true" ]
+      then
+          echo "push enabled"
+          # rm -rf /home/pipeline/$BUILD_ID/app
+          cp -R /home/pipeline/$BUILD_ID/ReplaceFiles/push/app /home/pipeline/$BUILD_ID
+      elif [ "$analytics" = "true" ]
+      then
+          # rm -rf /home/pipeline/$BUILD_ID/app
+          echo "analytics enabled"
+          cp -R /home/pipeline/$BUILD_ID/ReplaceFiles/analytics/app /home/pipeline/$BUILD_ID
+      fi
 
       # Android sdk
       wget https://dl.google.com/android/repository/sdk-tools-linux-3859397.zip
@@ -55,12 +70,14 @@ stages:
       cd /home/pipeline/$BUILD_ID
       fastlane beta
 
-      cp ./app/build/outputs/apk/app-release-unsigned.apk .
+      ls ./app/build/outputs/apk/
+
+      cp ./app/build/outputs/apk/app-release.apk .
 
       # Push the generated apk for git hub for testing
       git config --global user.name $gitPushUser
       git config --global user.email $gitPushEmail
-      git add app-release-unsigned.apk
+      git add app-release.apk
       git commit -m "released a new version of apk - build : ($BUILD_ID)"
       echo $apkGitPushUrl
       git push $apkGitPushUrl
@@ -76,50 +93,20 @@ stages:
   - name: skipDatafile
     value: 'true'
     type: text
-  - name: absoluteurl
-    value: http://gsander.de:8080/appcenterconsole80/console.html
-    type: text
-  - name: username
-    value: demo
-    type: text
-  - name: password
-    value: demo4711
-    type: text
-  - name: uploadfile
-    value: /Users/vinod/AppCenterAppiumAutomation/AppCenterUIAutomation/src/main/resources/Hello.ipa
-    type: text
-  - name: context
-    value: appcenterconsole80
-    type: text
-  - name: mobcontext
-    value: applicationcenter80
-    type: text
-  - name: port
-    value: '8080'
-    type: text
-  - name: portocol
-    value: http
-    type: text
-  - name: hostname
-    value: gsander.de
-    type: text
-  - name: appcenterclientapppath
-    value: /home/pipeline/$BUILD_ID/target/classes/IBMAppCenterClient.apk
-    type: text
-  - name: screenshot_dir
-    value: /home/pipeline/home/pipeline/$BUILD_ID/target
-    type: text
   - name: applicationPath
-    value: /home/pipeline/$BUILD_ID/appium/sample-scripts/java/src/test/resources/IBMAppCenterClient.apk
+    value: /home/pipeline/$BUILD_ID/appium/sample-scripts/java/app-release.apk
     type: text
   - name: executionType
     value: clientside
     type: text
   - name: test
-    value: AndroidAppiumExampleTest
+    value: PushAnalyticsTest
     type: text
   - name: bitbarApiKey
     value: 3IMUlaWW1BW2uzESHldjo5cEU4swMqf7
+    type: text
+  - name: appRepo
+    value: appRepo Name
     type: text
   jobs:
   - name: Test the app using Appium scripts on Bitbar
@@ -129,14 +116,14 @@ stages:
     script: |-
       #!/bin/bash
       cd /home/pipeline/$BUILD_ID/appium/sample-scripts/java
+      echo "Download apk file"
+      wget https://github.com/vinapp/$appRepo/blob/master/app-release.apk?raw=true
+      mv app-release.apk?raw=true app-release.apk
       mvn clean install -X -Dtest=$test -DexecutionType=$executionType -DapiKey=$bitbarApiKey -DapplicationPath=$applicationPath
 - name: UPLOAD - Logs
   triggers:
   - type: stage
   properties:
-  - name: gitUser
-    value: vinapp
-    type: text
   - name: gitToken
     value: 6aba5bac3e0e7fecc9cb6ca4ff623325191117c6
     type: text
