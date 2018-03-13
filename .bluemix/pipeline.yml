@@ -20,6 +20,12 @@ stages:
   - name: apkGitPushUrl
     value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/sample-android-app master
     type: text
+  - name: push
+    value: true
+    type: text
+  - name: analytics
+    value: false
+    type: text
   jobs:
   - name: Install Android SDK, Fastlane and build apk
     type: builder
@@ -145,12 +151,6 @@ stages:
     type: text
   - name: issueGitRepo
     value: https://api.github.com/repos/vinapp/testdroid-samples/issues
-    type: text
-  - name: push
-    value: true
-    type: text
-  - name: analytics
-    value: false
     type: text
   jobs:
   - name: LogsUpload
