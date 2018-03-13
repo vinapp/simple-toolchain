@@ -38,7 +38,10 @@ stages:
       export JAVA_HOME=/opt/IBM/java8
       cd /home/pipeline
 
-      if [ "$push" = "true" ]
+      if [ "$push" = "true" ] && [ "$analytics" = "true" ]
+      then
+        echo "push and analytics enabled"
+      elif [ "$push" = "true" ]
       then
           echo "push enabled"
           # rm -rf /home/pipeline/$BUILD_ID/app
