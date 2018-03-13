@@ -146,6 +146,12 @@ stages:
   - name: issueGitRepo
     value: https://api.github.com/repos/vinapp/testdroid-samples/issues
     type: text
+  - name: push
+    value: true
+    type: text
+  - name: analytics
+    value: false
+    type: text
   jobs:
   - name: LogsUpload
     type: builder
