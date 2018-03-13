@@ -17,11 +17,11 @@ stages:
   - name: gitPushEmail
     value: vin.app@gmail.com
     type: text
-  - name: apkGitPushUrl
-    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/$appRepo master
-    type: text
   - name: appRepo
     value: appRepo Name
+    type: text
+  - name: apkGitPushUrl
+    value: https://$gitPushToken:x-oauth-basic@github.com/vinapp/$appRepo master
     type: text  
   - name: push
     value: true
